@@ -10,6 +10,7 @@ import Vindinium
 
 import qualified Data.Graph.AStar as AS
 import qualified Data.Set as S
+import Data.Maybe (fromMaybe)
 
 bot :: Bot
 bot = stupidBot
@@ -17,52 +18,56 @@ bot = stupidBot
 
 stupidBot :: Bot
 --stupidBot = undefined
-stupidBot state = directionTo whereToGo (gameBoard $ stateGame state) (stateHero state)
+stupidBot = directionTo whereToGo
 
-whereToGo :: Board -> Hero -> Tile
-whereToGo board hero
-  | heroLife hero < 25 = TavernTile
+whereToGo :: State -> Tile
+whereToGo s
+  | heroLife (stateHero s) < 25 = TavernTile -- very advanced heuristic ©
   | otherwise = MineTile Nothing
 
-directionTo :: (Board -> Hero -> Tile) -> Board -> Hero -> Dir
-directionTo gps board hero =
-  let from = heroPos hero
-      path = shortestPathTo board hero (gps board hero)
+directionTo :: (State -> Tile) -> State -> Dir
+directionTo gps s =
+  let from = heroPos $ stateHero s
+      path = shortestPathTo s $ gps s
   in case path of
       (p:_)  -> dirFromPos from p
       []     -> Stay
 
-shortestPathTo :: Board -> Hero -> Tile -> [Pos]
-shortestPathTo board hero tile =
-  let path = AS.aStar (adjacentTiles board) (passable board tile) (distanceToClosest tile board hero) (isTile tile board) (heroPos hero)
-  in case path of
-      Nothing -> []
-      Just x -> x
+shortestPathTo :: State -> Tile -> [Pos]
+shortestPathTo s goal =
+  let board = gameBoard $ stateGame s
+      hero = stateHero s
+      path = AS.aStar (adjacentTiles board) (stepCost s goal) (distanceToClosest s goal) (isGoal goal s) (heroPos hero)
+  in fromMaybe [] path
 
 adjacentTiles :: Board -> Pos -> S.Set Pos
 adjacentTiles board (Pos x y) =
   S.fromList $ foldl (\ps p -> if inBoard board p then p:ps else ps) [] [Pos x $ y+1, Pos x $ y-1, Pos (x+1) y, Pos (x-1) y]
 
-isTile :: Tile -> Board -> Pos -> Bool
-isTile tile board pos = case tileAt board pos of
-                        Nothing -> False
-                        Just t -> t == tile
+isGoal :: Tile -> State -> Pos -> Bool
+isGoal goal s pos =
+  let board = gameBoard $ stateGame s
+      heroid = heroId $ stateHero s
+  in case tileAt board pos of
+      Nothing -> False
+      Just m@(MineTile _) -> not $ myMine heroid m
+      Just t -> t == goal
 
-distanceToClosest :: Tile -> Board -> Hero -> Pos -> Int
-distanceToClosest tile board hero pos =
-  case tile of
-    TavernTile -> minimum $ map (distanceHeuristix pos) (taverns board)
-    MineTile _ -> minimum $ map (\p ->
-                                  let (Just (MineTile owner)) = tileAt board p
-                                  in case owner of
-                                      Nothing -> distanceHeuristix pos p
-                                      Just oh -> if heroId hero == oh then 999
-                                                 else distanceHeuristix pos p) (mines board)
-    _ -> error "not implemented!"
+distanceToClosest :: State -> Tile -> Pos -> Int
+distanceToClosest s goal pos =
+  let board = gameBoard $ stateGame s
+      heroid = heroId $ stateHero s
+  in case goal of
+      TavernTile -> minimum $ map (distanceHeuristix pos) (taverns board)
+      MineTile _ -> minimum $ map (\p ->
+                    let Just m = tileAt board p
+                    in if myMine heroid m then 999
+                       else distanceHeuristix pos p) (mines board)
+      _ -> error "not implemented!"
 
 distanceHeuristix :: Pos -> Pos -> Int -- just zigzag our way there!
 distanceHeuristix (Pos fx fy) (Pos tx ty) =
-  (abs (fx - tx)) + (abs (fy - ty))
+  abs (fx - tx) + abs (fy - ty)
 
 -- vindinium has x/y axes flipped for some reason
 dirFromPos :: Pos -> Pos -> Dir
@@ -77,13 +82,22 @@ dirFromPos (Pos fx fy) (Pos tx ty) =
             1  -> East
             0  -> Stay
 
-passable :: Board -> Tile -> Pos -> Pos -> Int
-passable board dst (Pos fx fy) to@(Pos tx ty) =
-  case tileAt board to of
-    Nothing -> 999
-    Just tile -> case tile of
-                  FreeTile -> 1
-                  t -> if t==dst then 0 else 999
+myMine :: HeroId -> Tile -> Bool
+myMine hid (MineTile owner) =
+  case owner of
+    Nothing -> False
+    Just oh -> hid == oh
+
+stepCost :: State -> Tile -> Pos -> Pos -> Int
+stepCost s goal _ to =
+  let board = gameBoard $ stateGame s
+      heroid = heroId $ stateHero s
+  in case tileAt board to of
+      Nothing -> 999 -- or error?
+      Just tile -> case tile of
+                    FreeTile -> 1 -- TODO: consider adjacent heroes
+                    m@(MineTile _) -> if myMine heroid m then 999 else 0
+                    t -> if t == goal then 0 else 999
 
 inBoard :: Board -> Pos -> Bool
 inBoard b (Pos x y) =

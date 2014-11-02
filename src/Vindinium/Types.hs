@@ -157,13 +157,13 @@ instance FromJSON Board where
 parseBoard :: Int -> String -> Board
 parseBoard s txt =
     --Board s $ map parse (chunks t)
-    let xToPos x sz = Pos (fst pr) (snd pr)
+    let xToPos x sz = uncurry Pos pr
                       where pr = x `divMod` sz
         (tls, mns, tvs, _) = foldl (\(ts,mm,mt,pos) ch ->
                                       let t = parse ch
                                       in case t of
-                                          TavernTile -> (t:ts,mm,(xToPos pos s):mt,pos+1)
-                                          MineTile _ -> (t:ts, (xToPos pos s):mm,mt,pos+1)
+                                          TavernTile -> (t:ts,mm,xToPos pos s:mt,pos+1)
+                                          MineTile _ -> (t:ts, xToPos pos s:mm,mt,pos+1)
                                           _          -> (t:ts, mm, mt, pos+1)
                                           ) ([],[],[],0) (chunks txt)
     in Board s (reverse tls) mns tvs
