@@ -23,6 +23,7 @@ stupidBot = directionTo whereToGo
 whereToGo :: State -> Tile
 whereToGo s
   | heroLife (stateHero s) < 25 = TavernTile -- very advanced heuristic ©
+  | isTavernClose s && heroLife (stateHero s) < 90 = TavernTile
   | otherwise = MineTile Nothing
 
 directionTo :: (State -> Tile) -> State -> Dir
@@ -96,8 +97,17 @@ stepCost s goal _ to =
       Nothing -> 999 -- or error?
       Just tile -> case tile of
                     FreeTile -> 1 -- TODO: consider adjacent heroes
-                    m@(MineTile _) -> if myMine heroid m then 999 else 0
+                    m@(MineTile _) -> case goal of
+                                      MineTile _ -> if myMine heroid m then 999 else 0
+                                      _ -> 999
                     t -> if t == goal then 0 else 999
+
+isTavernClose :: State -> Bool
+isTavernClose s =
+  let board = gameBoard $ stateGame s
+      pos = heroPos $ stateHero s
+      adjacent = adjacentTiles board pos
+  in foldl (\is p -> is || S.member p adjacent) False (taverns board)
 
 inBoard :: Board -> Pos -> Bool
 inBoard b (Pos x y) =
