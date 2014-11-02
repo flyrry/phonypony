@@ -55,6 +55,7 @@ distanceHeuristix :: Pos -> Pos -> Int -- just zigzag our way there!
 distanceHeuristix (Pos fx fy) (Pos tx ty) =
   (abs (fx - tx)) + (abs (fy - ty))
 
+-- vindinium has x/y axes flipped for some reason
 dirFromPos :: Pos -> Pos -> Dir
 dirFromPos (Pos fx fy) (Pos tx ty) =
   let x = tx - fx
@@ -81,13 +82,10 @@ inBoard b (Pos x y) =
     in x >= 0 && x < s && y >= 0 && y < s
 
 tileAt :: Board -> Pos -> Maybe Tile
-tileAt b p@(Pos x y) = tileAt' b (Pos y x)
-
-tileAt' :: Board -> Pos -> Maybe Tile
-tileAt' b p@(Pos x y) =
+tileAt b p@(Pos x y) =
     if inBoard b p
         then Just $ boardTiles b !! idx
         else Nothing
   where
-    idx = y * boardSize b + x
+    idx = x * boardSize b + y
 
