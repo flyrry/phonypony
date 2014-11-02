@@ -76,6 +76,8 @@ data Hero = Hero {
 data Board = Board {
     boardSize  :: Int
   , boardTiles :: [Tile]
+  , mines      :: [Pos]
+  , taverns    :: [Pos]
 } deriving (Show, Eq)
 
 data Tile = FreeTile
@@ -88,7 +90,7 @@ data Tile = FreeTile
 data Pos = Pos {
     posX :: Int
   , posY :: Int
-} deriving (Show, Eq)
+} deriving (Show, Eq, Ord)
 
 data Dir = Stay | North | South | East | West
     deriving (Show, Eq)
@@ -153,8 +155,18 @@ instance FromJSON Board where
     parseJSON _ = mzero
 
 parseBoard :: Int -> String -> Board
-parseBoard s t =
-    Board s $ map parse (chunks t)
+parseBoard s txt =
+    --Board s $ map parse (chunks t)
+    let xToPos x sz = Pos (fst pr) (snd pr)
+                      where pr = x `divMod` sz
+        (tls, mns, tvs, _) = foldl (\(ts,mm,mt,pos) ch ->
+                                      let t = parse ch
+                                      in case t of
+                                          TavernTile -> (t:ts,mm,(xToPos pos s):mt,pos+1)
+                                          MineTile _ -> (t:ts, (xToPos pos s):mm,mt,pos+1)
+                                          _          -> (t:ts, mm, mt, pos+1)
+                                          ) ([],[],[],0) (chunks txt)
+    in Board s (reverse tls) mns tvs
   where
     chunks []       = []
     chunks ([_])    = error "chunks: even chars number"

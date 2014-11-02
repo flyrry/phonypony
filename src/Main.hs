@@ -7,6 +7,7 @@ import Data.Text (pack, unpack)
 import Control.Monad (liftM)
 
 import Bot
+import Sample
 import Vindinium
 import Vindinium.Runner.SDLVindinium
 
