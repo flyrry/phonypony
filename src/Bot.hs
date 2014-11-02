@@ -17,18 +17,27 @@ bot = stupidBot
 
 stupidBot :: Bot
 --stupidBot = undefined
-stupidBot state = shortestPathTo (heroPos $ stateHero state) (gameBoard $ stateGame state) (stateHero state) (MineTile Nothing)
+stupidBot state = directionTo whereToGo (gameBoard $ stateGame state) (stateHero state)
 
-shortestPathTo :: Pos -> Board -> Hero -> Tile -> Dir
-shortestPathTo from board hero tile =
-    let path = AS.aStar (adjacentTiles board) (passable board tile) (distanceToClosest tile board hero) (isTile tile board) from
-    in case path of
-        --Nothing -> []
-        --Just x -> x
-        Nothing -> Stay
-        Just x -> case x of
-                  [] -> Stay
-                  (h:_) -> dirFromPos from h
+whereToGo :: Board -> Hero -> Tile
+whereToGo board hero
+  | heroLife hero < 25 = TavernTile
+  | otherwise = MineTile Nothing
+
+directionTo :: (Board -> Hero -> Tile) -> Board -> Hero -> Dir
+directionTo gps board hero =
+  let from = heroPos hero
+      path = shortestPathTo board hero (gps board hero)
+  in case path of
+      (p:_)  -> dirFromPos from p
+      []     -> Stay
+
+shortestPathTo :: Board -> Hero -> Tile -> [Pos]
+shortestPathTo board hero tile =
+  let path = AS.aStar (adjacentTiles board) (passable board tile) (distanceToClosest tile board hero) (isTile tile board) (heroPos hero)
+  in case path of
+      Nothing -> []
+      Just x -> x
 
 adjacentTiles :: Board -> Pos -> S.Set Pos
 adjacentTiles board (Pos x y) =
