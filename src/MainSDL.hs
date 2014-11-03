@@ -8,7 +8,7 @@ import Control.Monad (liftM)
 
 import Bot
 import Vindinium.Types
-import Vindinium.Runner.ConsoleVindinium
+import Vindinium.Runner.SDLVindinium
 
 data Cmd = Training Settings (Maybe Int) (Maybe Board)
          | Arena Settings
@@ -40,7 +40,7 @@ cmd = subparser
 
 runCmd :: Cmd -> IO ()
 runCmd c  = do
-    s <- runConsoleVindinium (cmdSettings c) $
+    s <- runSDLVindinium (cmdSettings c) $
         case c of
             (Training _ t b) -> playTraining t b bot
             (Arena _)        -> playArena bot

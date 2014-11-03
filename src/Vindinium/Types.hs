@@ -27,6 +27,8 @@ import Control.Applicative ((<$>), (<*>))
 class (Functor m, Monad m, MonadIO m) => Vindinium m where
     getSettings :: m Settings
     move :: State -> Dir -> m State
+    playTraining :: Maybe Int -> Maybe Board -> Bot -> m State
+    playArena :: Bot -> m State
 
 newtype Key = Key Text deriving (Show, Eq)
 

@@ -6,7 +6,7 @@ module Bot
 -}
 module Bot where
 
-import Vindinium
+import Vindinium.Types
 
 import qualified Data.Graph.AStar as AS
 import qualified Data.Set as S
