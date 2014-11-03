@@ -47,6 +47,7 @@ instance Vindinium SDLVindinium where
     playTraining mt mb b = (SDLVindinium $ do
       (settings, sdlResources) <- ask
       initialState <- liftIO (startTraining settings mt mb)
+      liftIO $ SDL.setWindowSize (_window sdlResources) (fromIntegral $ spriteSize * (boardSize . gameBoard . stateGame $ initialState)) (fromIntegral $ spriteSize * (boardSize . gameBoard . stateGame $ initialState))
       liftIO $ SDL.showWindow (_window sdlResources)
       -- TODO: draw initial state
       let tileset = _tileset sdlResources
