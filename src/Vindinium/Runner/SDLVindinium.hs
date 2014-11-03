@@ -6,10 +6,13 @@ import Data.Aeson
 import Data.Word (Word32)
 import Data.Bits ((.|.))
 import Data.List (foldl')
+import Data.Maybe (fromJust)
 import Control.Applicative (Applicative)
 import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.Map.Lazy as M
 
+import qualified Graphics.UI.SDL.Image as Image
 import qualified Graphics.UI.SDL as SDL
 import Foreign.C.String
 import Foreign.C.Types
@@ -17,9 +20,11 @@ import Foreign.Ptr
 
 import Vindinium.Types
 import Vindinium.Api
+import Vindinium.Runner.Tileset
 
 data SDLResources = SDLResources { _window :: SDL.Window
                                  , _renderer :: SDL.Renderer
+                                 , _tileset :: M.Map String Sprite
                                  }
 
 newtype SDLVindinium a = SDLVindinium (ReaderT (Settings, SDLResources) IO a)
@@ -39,6 +44,10 @@ instance Vindinium SDLVindinium where
       initialState <- liftIO (startTraining settings mt mb)
       liftIO $ SDL.showWindow (_window sdlResources)
       -- TODO: draw initial state
+      let tileset = _tileset sdlResources
+          someSprite = fromJust $ M.lookup "rock" tileset
+      _ <- liftIO $ renderSprite (_renderer sdlResources) someSprite 0 0
+      liftIO $ SDL.renderPresent (_renderer sdlResources)
       return initialState) >>= playLoop b
     playArena b = (SDLVindinium $ do
       (settings, sdlResources) <- ask
@@ -58,12 +67,15 @@ playLoop bot state =
 runSDLVindinium :: Settings -> SDLVindinium a -> IO a
 runSDLVindinium s (SDLVindinium v) = do
     initializeSDL [SDL.initFlagVideo] >>= catchRisky
+    Image.imgInit [Image.InitPNG]
     window <- createWindow "Vindinium Viewer" >>= catchRisky
     renderer <- createRenderer window (-1) [SDL.rendererFlagAccelerated] >>= catchRisky
     _ <- clearWindow renderer
-    result <- runReaderT v (s, SDLResources window renderer)
+    tileset <- loadSprites renderer
+    result <- runReaderT v (s, SDLResources window renderer tileset)
     SDL.destroyRenderer renderer
     SDL.destroyWindow window
+    Image.imgQuit
     SDL.quit
     return result
 
