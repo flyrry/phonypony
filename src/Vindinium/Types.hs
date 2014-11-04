@@ -27,6 +27,7 @@ import Control.Applicative ((<$>), (<*>))
 class (Functor m, Monad m, MonadIO m) => Vindinium m where
     getSettings :: m Settings
     move :: State -> Dir -> m State
+    outputState :: State -> m ()
     playTraining :: Maybe Int -> Maybe Board -> Bot -> m State
     playArena :: Bot -> m State
 
