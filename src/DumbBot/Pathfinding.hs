@@ -33,6 +33,9 @@ instance Ord Priority where
 adjacent :: Graph -> Vertex -> [(Vertex, Cost)]
 adjacent = undefined
 
+manhattan :: Distance
+manhattan (Pos row1 col1) (Pos row2 col2) = abs (row1 - row2) + abs (col1 - col2)
+
 -- given a start position construct shortest paths to all other positions
 dijkstra :: Graph -> Distance -> Vertex -> Dijkstra
 dijkstra graph dist start = buildDijkstra $ unfoldr (step graph dist) $ relax (start, Priority 0 start) queue
