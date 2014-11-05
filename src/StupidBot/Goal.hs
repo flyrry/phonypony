@@ -1,4 +1,4 @@
-module Goal where
+module StupidBot.Goal where
 
 import Vindinium.Types
 import Utils
