@@ -14,13 +14,15 @@ import Vindinium.Types
 -- Based on https://gist.github.com/kazu-yamamoto/5218431
 --          http://mew.org/~kazu/material/2012-psq.pdf
 
-type Graph = Pos -> [Pos]
-type Cost = Int
-type Vertex = Pos
-type Queue = PSQ Vertex Priority
-type Mapping = (Vertex, Priority)
-type Distance = Vertex -> Vertex -> Cost
+type Graph    = Pos -> [Pos]              -- Given a position on a board return all neighbours
+type Cost     = Int                      -- Connected tiles on a board all have cost 1
+type Vertex   = Pos                      -- Nodes in the graph are represented by position on a board
+type Queue    = PSQ Vertex Priority      -- Priority search queue to be used in constructing shortest paths from starting position
+type Mapping  = (Vertex, Priority)       -- Every node is going to be assigned a priority
+type Distance = Vertex -> Vertex -> Cost -- Distance function between two nodes on a board
 
+-- distance: keeps distances from starting position to all other positions on a board
+-- previous: keeps information from which node we got to the node we are interested in
 data Dijkstra = Dijkstra { distance :: M.Map Vertex Cost
                          , previous :: M.Map Vertex Vertex
                          }
@@ -33,6 +35,7 @@ instance Ord Priority where
 adjacent :: Graph -> Vertex -> [(Vertex, Cost)]
 adjacent = undefined
 
+-- http://en.wikipedia.org/wiki/Taxicab_geometry
 manhattan :: Distance
 manhattan (Pos row1 col1) (Pos row2 col2) = abs (row1 - row2) + abs (col1 - col2)
 
