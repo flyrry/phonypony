@@ -14,7 +14,7 @@ import Vindinium.Types
 -- Based on https://gist.github.com/kazu-yamamoto/5218431
 --          http://mew.org/~kazu/material/2012-psq.pdf
 
-type Graph    = Pos -> [Pos]              -- Given a position on a board return all neighbours
+type Graph    = Pos -> [Pos]             -- Given a position on a board return all neighbours
 type Cost     = Int                      -- Connected tiles on a board all have cost 1
 type Vertex   = Pos                      -- Nodes in the graph are represented by position on a board
 type Queue    = PSQ Vertex Priority      -- Priority search queue to be used in constructing shortest paths from starting position
