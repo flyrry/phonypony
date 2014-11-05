@@ -30,6 +30,7 @@ executable pp
                      , optparse-applicative >= 0.11.0
                      , astar
                      , containers
+                     , PSQueue
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -O2 -Wall
@@ -52,6 +53,7 @@ executable pp-sdl
                      , sdl2-image
                      , timers
                      , suspend
+                     , PSQueue
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -O2 -Wall
