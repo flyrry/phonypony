@@ -73,12 +73,12 @@ vertices graph start = execState (visitFrom start) S.empty
         get >>= \v -> unless (neighbour `S.member` v) $ modify (S.insert neighbour) >> visitFrom neighbour
 
 -- distance to a goal position
-distanceDijkstra :: Vertex -> Dijkstra -> Maybe Cost
-distanceDijkstra goal (Dijkstra dist _) = M.lookup goal dist
+distanceDijkstra :: Dijkstra -> Vertex -> Maybe Cost
+distanceDijkstra (Dijkstra dist _) goal = M.lookup goal dist
 
 -- path to a goal position
-pathDijkstra :: Vertex -> Dijkstra -> Maybe [Vertex]
-pathDijkstra goal (Dijkstra _ prev) =
+pathDijkstra :: Dijkstra -> Vertex -> Maybe [Vertex]
+pathDijkstra (Dijkstra _ prev) goal =
     case searchBackwards goal of
       [_] -> Nothing
       path -> Just (reverse path)
