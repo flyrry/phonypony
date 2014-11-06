@@ -1,4 +1,7 @@
-module DumbBot.Pathfinding where
+module DumbBot.Pathfinding ( buildBoardMap
+                           , distance
+                           , walk
+                           ) where
 
 import Data.List (unfoldr, foldl')
 import Data.Maybe (fromMaybe)
@@ -13,6 +16,24 @@ import qualified Data.PSQueue as PSQ
 import Vindinium.Types
 import Utils
 
+newtype Path  = Path [Pos]
+type BoardMap = Pos -> Maybe Path
+
+buildBoardMap :: Board -> Hero -> BoardMap
+buildBoardMap board hero =
+    let start = heroPos hero
+    in pathDijkstra (dijkstra (adjacent board start) manhattan start)
+
+distance :: Path -> Int
+distance (Path path) = length path
+
+walk :: Hero -> Path -> Dir
+walk _ (Path []) = Stay
+walk hero (Path (nextPos : _)) = dirFromPos (heroPos hero) nextPos
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
 -- Based on https://gist.github.com/kazu-yamamoto/5218431
 --          http://mew.org/~kazu/material/2012-psq.pdf
 
@@ -22,11 +43,8 @@ type Vertex   = Pos                      -- Nodes in the graph are represented b
 type Queue    = PSQ Vertex Priority      -- Priority search queue to be used in constructing shortest paths from starting position
 type Mapping  = (Vertex, Priority)       -- Every node is going to be assigned a priority
 
--- distance: keeps distances from starting position to all other positions on a board
--- previous: keeps information from which node we got to the node we are interested in
-data Dijkstra = Dijkstra { distance :: M.Map Vertex Cost
-                         , previous :: M.Map Vertex Vertex
-                         }
+-- keeps information from which node we got to the node we are interested in
+newtype Dijkstra = Dijkstra (M.Map Vertex Vertex)
 
 data Priority = Priority Cost Vertex deriving (Eq)
 
@@ -44,20 +62,20 @@ instance Ord Priority where
 -- empty set because we cannot actually make our hero go to (1,2) in the
 -- first place. If we didn't restrict it then it would return the
 -- neighbouring tiles and our pathing would think that it can reach MineTile
-adjacent :: Board -> Vertex -> Vertex -> S.Set Vertex
+adjacent :: Board -> Vertex -> Graph
 adjacent board start pos =
-    let tiles = adjacentTiles board pos
+    let tiles = S.toList $ adjacentTiles board pos
     in if pos == start || fromMaybe WoodTile (tileAt board pos) == FreeTile
-         then S.filter (\p -> fromMaybe WoodTile (tileAt board p) /= WoodTile) tiles
-         else S.empty
+         then filter (\p -> fromMaybe WoodTile (tileAt board p) /= WoodTile) tiles
+         else []
 
 -- given a start position construct shortest paths to all other positions
 dijkstra :: Graph -> Distance -> Vertex -> Dijkstra
 dijkstra graph dist start = buildDijkstra $ unfoldr (step graph dist) $ relax (start, Priority 0 start) queue
   where
     queue = PSQ.fromList $ map (\v -> v :-> Priority maxBound start) (S.toList $ vertices graph start)
-    buildDijkstra = foldl' insertEdge (Dijkstra M.empty M.empty)
-    insertEdge (Dijkstra d p) (destination, cost, source) = Dijkstra (M.insert destination cost d) (M.insert destination source p)
+    buildDijkstra = foldl' insertEdge (Dijkstra M.empty)
+    insertEdge (Dijkstra p) (destination, _, source) = Dijkstra (M.insert destination source p)
 
 -- construct next edge in the graph taking the vertex with minimal cost
 step :: Graph -> Distance -> Queue -> Maybe ((Vertex, Cost, Vertex), Queue)
@@ -90,15 +108,11 @@ vertices graph start = execState (visitFrom start) S.empty
       forM_ (graph start') $ \neighbour ->
         get >>= \v -> unless (neighbour `S.member` v) $ modify (S.insert neighbour) >> visitFrom neighbour
 
--- distance to a goal position
-distanceDijkstra :: Dijkstra -> Vertex -> Maybe Cost
-distanceDijkstra (Dijkstra dist _) goal = M.lookup goal dist
-
 -- path to a goal position
-pathDijkstra :: Dijkstra -> Vertex -> Maybe [Vertex]
-pathDijkstra (Dijkstra _ prev) goal =
+pathDijkstra :: Dijkstra -> Vertex -> Maybe Path
+pathDijkstra (Dijkstra prev) goal =
     case searchBackwards goal of
       [_] -> Nothing
-      path -> Just (reverse path)
+      path -> Just (Path $ reverse path)
     where
       searchBackwards goal' = goal' : maybe [] searchBackwards (M.lookup goal' prev)
