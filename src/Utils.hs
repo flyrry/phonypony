@@ -20,3 +20,6 @@ inBoard b (Pos x y) =
     let s = boardSize b
     in x >= 0 && x < s && y >= 0 && y < s
 
+-- convert given board to a list of tiles with corresponding position
+tilePosition :: Board -> [(Tile, Pos)]
+tilePosition (Board size tiles _ _) = zip tiles [Pos x y | x <- [0..size-1], y <- [0..size-1]]
