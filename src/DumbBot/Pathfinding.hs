@@ -31,8 +31,8 @@ data Priority = Priority Cost Vertex deriving (Eq)
 instance Ord Priority where
     Priority cost1 _ `compare` Priority cost2 _ = cost1 `compare` cost2
 
-adjacent :: Graph -> Vertex -> [(Vertex, Cost)]
-adjacent = undefined
+adjacent :: Graph -> -> Vertex -> Vertex -> [(Vertex, Cost)]
+adjacent graph start currentPosition = undefined -- TODO
 
 -- given a start position construct shortest paths to all other positions
 dijkstra :: Graph -> Distance -> Vertex -> Dijkstra
