@@ -33,13 +33,9 @@ dirFromPos :: Pos -> Pos -> Dir
 dirFromPos (Pos fx fy) (Pos tx ty) =
   let x = tx - fx
       y = ty - fy
-  in case x of
-      -1 -> North
-      1  -> South
-      0  -> case y of
-            -1 -> West
-            1  -> East
-            0  -> Stay
-            _  -> error "impossible to find direction!"
-      _  -> error "impossible to find direction!"
-
+  in case (x, y) of
+       (-1, 0) -> North
+       (1, 0) -> South
+       (0, -1) -> West
+       (0, 1) -> East
+       _ -> Stay
