@@ -11,8 +11,9 @@ data Action = Heal | Kill Hero | CaptureMine deriving (Show)
 data Goal = Goal Action Pos deriving (Show)
 
 goalDistance :: Goal -> Int
-goalDistance (Goal _ pos) = undefined
+goalDistance (Goal _ pos) = undefined -- TODO
 
+-- collect all possible goals from the board that we might be interested in pursuing
 getGoals :: State -> [Goal]
 getGoals s = let enemies = getEnemies s
                  attackableMines = getMines s

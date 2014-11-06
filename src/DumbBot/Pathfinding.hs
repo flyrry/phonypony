@@ -1,6 +1,7 @@
 module DumbBot.Pathfinding where
 
 import Data.List (unfoldr, foldl')
+import Data.Maybe (fromMaybe)
 import Data.PSQueue (PSQ, Binding(..))
 import Control.Applicative ((<$>))
 import Control.Monad (unless, forM_)
@@ -10,6 +11,7 @@ import qualified Data.Set as S
 import qualified Data.PSQueue as PSQ
 
 import Vindinium.Types
+import Utils
 
 -- Based on https://gist.github.com/kazu-yamamoto/5218431
 --          http://mew.org/~kazu/material/2012-psq.pdf
@@ -31,8 +33,23 @@ data Priority = Priority Cost Vertex deriving (Eq)
 instance Ord Priority where
     Priority cost1 _ `compare` Priority cost2 _ = cost1 `compare` cost2
 
-adjacent :: Graph -> -> Vertex -> Vertex -> [(Vertex, Cost)]
-adjacent graph start currentPosition = undefined -- TODO
+-- select neighbour positions which we can actually move to
+-- taking into account the position from which we are asking those
+-- neighbouring tiles (if it is not a FreeTile or tile at Hero position
+-- then we cannot possibly reach that tile and there is no way to go to any
+-- of its neighbours)
+--
+-- Example: given a 1x3 board [Hero, WoodTile, MineTile]
+-- if we ask to give neighbours of position (1,2) then we would return an
+-- empty set because we cannot actually make our hero go to (1,2) in the
+-- first place. If we didn't restrict it then it would return the
+-- neighbouring tiles and our pathing would think that it can reach MineTile
+adjacent :: Board -> Vertex -> Vertex -> S.Set Vertex
+adjacent board start pos =
+    let tiles = adjacentTiles board pos
+    in if pos == start || fromMaybe WoodTile (tileAt board pos) == FreeTile
+         then S.filter (\p -> fromMaybe WoodTile (tileAt board p) /= WoodTile) tiles
+         else S.empty
 
 -- given a start position construct shortest paths to all other positions
 dijkstra :: Graph -> Distance -> Vertex -> Dijkstra
