@@ -19,7 +19,6 @@ type Cost     = Int                      -- Connected tiles on a board all have 
 type Vertex   = Pos                      -- Nodes in the graph are represented by position on a board
 type Queue    = PSQ Vertex Priority      -- Priority search queue to be used in constructing shortest paths from starting position
 type Mapping  = (Vertex, Priority)       -- Every node is going to be assigned a priority
-type Distance = Vertex -> Vertex -> Cost -- Distance function between two nodes on a board
 
 -- distance: keeps distances from starting position to all other positions on a board
 -- previous: keeps information from which node we got to the node we are interested in
@@ -34,10 +33,6 @@ instance Ord Priority where
 
 adjacent :: Graph -> Vertex -> [(Vertex, Cost)]
 adjacent = undefined
-
--- http://en.wikipedia.org/wiki/Taxicab_geometry
-manhattan :: Distance
-manhattan (Pos row1 col1) (Pos row2 col2) = abs (row1 - row2) + abs (col1 - col2)
 
 -- given a start position construct shortest paths to all other positions
 dijkstra :: Graph -> Distance -> Vertex -> Dijkstra

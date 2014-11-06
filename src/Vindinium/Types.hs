@@ -14,6 +14,7 @@ module Vindinium.Types
         , Tile (..)
         , Pos (..)
         , Dir (..)
+        , Distance
         )
     where
 
@@ -97,6 +98,8 @@ data Pos = Pos {
 
 data Dir = Stay | North | South | East | West
     deriving (Show, Eq)
+
+type Distance = Pos -> Pos -> Int -- Distance function between two positions on a board
 
 instance ToJSON Dir where
     toJSON Stay = String "Stay"

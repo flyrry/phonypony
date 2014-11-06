@@ -22,39 +22,18 @@ shortestPathTo :: State -> Goal -> [Pos]
 shortestPathTo s goal =
   let board = gameBoard $ stateGame s
       hero = stateHero s
-      path = AS.aStar (adjacentTiles board) (stepCost s goal) (distanceToClosest s goal) (isGoal goal s) (heroPos hero)
+      path = AS.aStar (adjacentTiles board) (stepCost s goal) (distanceEstimateTo goal s) (isGoal goal s) (heroPos hero)
   in fromMaybe [] path
 
-distanceToClosest :: State -> Goal -> Pos -> Int
-distanceToClosest s goal pos =
-  let board = gameBoard $ stateGame s
-      heroid = heroId $ stateHero s
-  in case goal of
-     Heal -> minimum $ map (distanceHeuristix pos) (taverns board)
-     Capture _ -> minimum $ map (\p ->
-                    let Just m = tileAt board p
-                    in if canCaptureMine m heroid then distanceHeuristix pos p
-                       else 999) (mines board)
-     _ -> error "not implemented!"
-
-distanceHeuristix :: Pos -> Pos -> Int -- just zigzag our way there!
-distanceHeuristix (Pos fx fy) (Pos tx ty) =
-  abs (fx - tx) + abs (fy - ty)
-
--- vindinium has x/y axes flipped for some reason
-dirFromPos :: Pos -> Pos -> Dir
-dirFromPos (Pos fx fy) (Pos tx ty) =
-  let x = tx - fx
-      y = ty - fy
-  in case x of
-      -1 -> North
-      1  -> South
-      0  -> case y of
-            -1 -> West
-            1  -> East
-            0  -> Stay
-            _  -> error "impossible to find direction!"
-      _  -> error "impossible to find direction!"
+distanceEstimateTo :: Goal -> State -> Pos -> Int
+distanceEstimateTo Heal s pos = minimum $ map (manhattan pos) (taverns (gameBoard $ stateGame s))
+distanceEstimateTo (Capture _) s pos =
+  let board  = gameBoard $ stateGame s
+  in minimum $ map (\p ->
+      let heroid = heroId $ stateHero s
+          Just m = tileAt board p
+      in if canCaptureMine m heroid then manhattan pos p else 999) (mines board)
+distanceEstimateTo _ _ _ = error "not implemented!"
 
 stepCost :: State -> Goal -> Pos -> Pos -> Int
 stepCost s goal _ to =
