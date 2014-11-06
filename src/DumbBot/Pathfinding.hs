@@ -1,6 +1,7 @@
 module DumbBot.Pathfinding ( buildBoardMap
                            , distance
                            , walk
+                           , BoardMap
                            ) where
 
 import Data.List (unfoldr, foldl')
