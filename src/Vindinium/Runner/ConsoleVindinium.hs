@@ -32,10 +32,12 @@ instance Vindinium ConsoleVindinium where
       liftIO $ TIO.putStrLn "Got initial state from the server"
       liftIO $ TIO.putStrLn $ T.append "View url: " (stateViewUrl initialState)
       return initialState) >>= playLoop b
-    outputState = undefined -- TODO: if needed
+    outputState s = ConsoleVindinium $ do
+      liftIO $ print s
 
 playLoop :: Vindinium m => Bot -> State -> m State
-playLoop bot state =
+playLoop bot state = do
+    --outputState state
     if (gameFinished . stateGame) state
         then return state
         else do
