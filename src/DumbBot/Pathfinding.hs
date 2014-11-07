@@ -20,10 +20,10 @@ import Utils
 newtype Path  = Path [Pos] deriving (Show, Eq)
 type BoardMap = Pos -> Maybe Path
 
-buildBoardMap :: Board -> Hero -> BoardMap
-buildBoardMap board hero =
+buildBoardMap :: State -> Hero -> BoardMap
+buildBoardMap state hero =
     let start = heroPos hero
-    in pathDijkstra (dijkstra (adjacent board start) manhattan start)
+    in pathDijkstra (dijkstra (adjacent state start) manhattan start)
 
 distance :: Path -> Int
 distance (Path path) = length path
@@ -63,11 +63,18 @@ instance Ord Priority where
 -- empty set because we cannot actually make our hero go to (1,2) in the
 -- first place. If we didn't restrict it then it would return the
 -- neighbouring tiles and our pathing would think that it can reach MineTile
-adjacent :: Board -> Vertex -> Graph
-adjacent board start pos =
-    let tiles = S.toList $ adjacentTiles board pos
+adjacent :: State -> Vertex -> Graph
+adjacent state start pos =
+    let board = gameBoard $ stateGame state
+        tiles = S.toList $ adjacentTiles board pos
+        heroHasEnoughHealth = heroLife (stateHero state) > 30
+        worthEntering tile =
+          let targetTile = fromMaybe WoodTile (tileAt board tile)
+          in if heroHasEnoughHealth
+               then targetTile /= WoodTile
+               else targetTile /= WoodTile && not (isEnemyNearby state pos)
     in if pos == start || fromMaybe WoodTile (tileAt board pos) == FreeTile
-         then filter (\p -> fromMaybe WoodTile (tileAt board p) /= WoodTile) tiles
+         then filter worthEntering tiles
          else []
 
 -- given a start position construct shortest paths to all other positions

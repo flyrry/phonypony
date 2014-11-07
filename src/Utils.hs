@@ -1,9 +1,21 @@
 module Utils where
 
-import Data.List (foldl')
+import Data.List (foldl', deleteBy)
+import Data.Function (on)
 
 import Vindinium.Types
 import qualified Data.Set as S
+
+numberOfHeroMines :: Board -> Hero -> Int
+numberOfHeroMines board hero = foldl' mineTile 0 (boardTiles board)
+  where
+    mineTile acc (MineTile (Just heroId')) = if heroId' == heroId hero then acc + 1 else acc
+    mineTile acc _ = acc
+
+-- get all heroes except our own one
+getEnemies :: State -> [Hero]
+getEnemies s = let hero = stateHero s
+               in deleteBy ((==) `on` heroId) hero (gameHeroes $ stateGame s)
 
 isTavernNearby :: State -> Bool
 isTavernNearby state =
@@ -11,6 +23,12 @@ isTavernNearby state =
         pos = heroPos $ stateHero state
         neighbouringTiles = adjacentTiles board pos
     in foldl' (\result p -> result || S.member p neighbouringTiles) False (taverns board)
+
+isEnemyNearby :: State -> Pos -> Bool
+isEnemyNearby state pos =
+    let board = gameBoard $ stateGame state
+        enemies = getEnemies state
+    in pos `S.member` S.unions (map (adjacentTiles board . heroPos) enemies)
 
 adjacentTiles :: Board -> Pos -> S.Set Pos
 adjacentTiles board (Pos x y) =

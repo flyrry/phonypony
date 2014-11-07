@@ -1,8 +1,5 @@
 module DumbBot.Goal where
 
-import Data.List (deleteBy)
-import Data.Function (on)
-
 import DumbBot.Pathfinding
 import Vindinium.Types
 import Utils
@@ -37,8 +34,8 @@ goalScore state boardMap (Goal action pos) =
                          else if isTavernNearby state && ourHeroHealth < 90 -- we are near the Tavern
                                 then maxBound                               -- so how about we heal to full
                                 else minBound                               -- no need as we are pretty high on health
-               (Kill enemy) -> if canKill ourHero enemy dist
-                                 then dist -- TODO: we have to calculate the amount of gold we acquire if we kill enemy
+               (Kill enemy) -> if dist < 7 && canKill ourHero enemy dist
+                                 then (maxTurn - turn - dist) * numberOfHeroMines (gameBoard $ stateGame state) enemy
                                  else minBound -- abandon ship!
     in maybe minBound actionScore (boardMap pos)
 
@@ -59,11 +56,6 @@ getGoals s = let enemies = getEnemies s
                        , map (Goal CaptureMine) attackableMines
                        , map (Goal Heal) allTaverns
                        ]
-
--- get all heroes except our own one
-getEnemies :: State -> [Hero]
-getEnemies s = let hero = stateHero s
-               in deleteBy ((==) `on` heroId) hero (gameHeroes $ stateGame s)
 
 -- get all mines except the ones we own
 getMines :: State -> [Pos]
