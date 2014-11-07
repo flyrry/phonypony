@@ -12,7 +12,11 @@ data Action = Heal | Kill Hero | CaptureMine deriving (Show)
 data Goal = Goal Action Pos deriving (Show)
 
 goalScore :: BoardMap -> Goal -> Int
-goalScore = undefined
+goalScore boardMap goal =
+    case goal of
+      (Goal CaptureMine pos) -> maxBound
+      (Goal Heal pos) -> minBound
+      (Goal (Kill hero) pos) -> minBound
 
 -- if there is currently no path to desired destination
 -- then return max possible distance otherwise just return
