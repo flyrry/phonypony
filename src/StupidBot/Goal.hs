@@ -3,7 +3,6 @@ module StupidBot.Goal where
 import Vindinium.Types
 import Utils
 import Data.Maybe (fromJust, isNothing)
-import qualified Data.Set as S
 
 data Mine = OwnedMine HeroId | AnyMine -- any excludes mines that we own
 data Goal = Capture Mine | Kill HeroId | Heal | Survive
@@ -13,7 +12,7 @@ type GPS = State -> Goal
 whereToGo :: GPS
 whereToGo s
   | heroLife (stateHero s) < 25 = Heal -- very advanced heuristic ©
-  | isTavernClose s && heroLife (stateHero s) < 90 = Heal
+  | isTavernNearby s && heroLife (stateHero s) < 90 = Heal
   | otherwise = Capture AnyMine
 
 isGoal :: Goal -> State -> Pos -> Bool
@@ -38,13 +37,6 @@ canCaptureMine _ _ = False
 isTavern :: Tile -> Bool
 isTavern TavernTile = True
 isTavern _ = False
-
-isTavernClose :: State -> Bool
-isTavernClose s =
-  let board = gameBoard $ stateGame s
-      pos = heroPos $ stateHero s
-      adjacent = adjacentTiles board pos
-  in foldl (\is p -> is || S.member p adjacent) False (taverns board)
 
 isSafe :: Board -> Pos -> Bool
 isSafe = undefined

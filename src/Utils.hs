@@ -1,7 +1,16 @@
 module Utils where
 
+import Data.List (foldl')
+
 import Vindinium.Types
 import qualified Data.Set as S
+
+isTavernNearby :: State -> Bool
+isTavernNearby state =
+    let board = gameBoard $ stateGame state
+        pos = heroPos $ stateHero state
+        neighbouringTiles = adjacentTiles board pos
+    in foldl' (\result p -> result || S.member p neighbouringTiles) False (taverns board)
 
 adjacentTiles :: Board -> Pos -> S.Set Pos
 adjacentTiles board (Pos x y) =
