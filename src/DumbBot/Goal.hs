@@ -17,13 +17,21 @@ canCaptureMine ourHero dist = fromIntegral (heroLife ourHero) - dist > 20
 goalScore :: State -> BoardMap -> Goal -> Int
 goalScore state boardMap (Goal action pos) =
     let ourHero = stateHero state
+        ourHeroHealth = heroLife ourHero
+        turn = fromIntegral $ gameTurn $ stateGame state
+        maxTurn = fromIntegral $ gameMaxTurns $ stateGame state
         actionScore path =
-          case action of
-            CaptureMine -> if canCaptureMine ourHero (distance path)
-                             then maxBound
-                             else minBound
-            Heal -> if heroLife ourHero < 21 then maxBound else minBound
-            (Kill hero) -> minBound
+          let dist = distance path -- how many turns we need to reach the goal
+          in case action of
+               CaptureMine -> if canCaptureMine ourHero dist     -- will we have enough life when we reach the mine?
+                                then (maxTurn - turn - dist) * 1 -- 1 gold per turn from the mine after acquiring it
+                                else minBound                    -- no way, let's not suicide
+               Heal -> if ourHeroHealth < 21
+                         then maxBound -- healing is highest priority when our health is low
+                         else if isTavernNearby state && ourHeroHealth < 90 -- we are near the Tavern
+                                then maxBound                               -- so how about we heal to full
+                                else minBound                               -- no need as we are pretty high on health
+               (Kill hero) -> minBound -- TODO: decide when we want to assassinate an enemy
     in maybe minBound actionScore (boardMap pos)
 
 -- if there is currently no path to desired destination
