@@ -17,7 +17,7 @@ import qualified Data.PSQueue as PSQ
 import Vindinium.Types
 import Utils
 
-newtype Path  = Path [Pos]
+newtype Path  = Path [Pos] deriving Show
 type BoardMap = Pos -> Maybe Path
 
 buildBoardMap :: Board -> Hero -> BoardMap
@@ -76,7 +76,7 @@ dijkstra graph dist start = buildDijkstra $ unfoldr (step graph dist) $ relax (s
   where
     queue = PSQ.fromList $ map (\v -> v :-> Priority maxBound start) (S.toList $ vertices graph start)
     buildDijkstra = foldl' insertEdge (Dijkstra M.empty)
-    insertEdge (Dijkstra p) (destination, _, source) = Dijkstra (M.insert destination source p)
+    insertEdge dij@(Dijkstra p) (destination, _, source) = if source /= destination then Dijkstra (M.insert destination source p) else dij
 
 -- construct next edge in the graph taking the vertex with minimal cost
 step :: Graph -> Distance -> Queue -> Maybe ((Vertex, Cost, Vertex), Queue)
@@ -114,6 +114,6 @@ pathDijkstra :: Dijkstra -> Vertex -> Maybe Path
 pathDijkstra (Dijkstra prev) goal =
     case searchBackwards goal of
       [_] -> Nothing
-      path -> Just (Path $ reverse path)
+      path -> Just (Path $ (tail . reverse) path)
     where
       searchBackwards goal' = goal' : maybe [] searchBackwards (M.lookup goal' prev)
