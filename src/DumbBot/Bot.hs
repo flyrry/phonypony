@@ -18,7 +18,7 @@ dumbBot state = let board = gameBoard $ stateGame state
                     goals = getGoals state
                     -- assign a value to each goal which indicates what
                     -- a potential profit (or loss) it might give us
-                    score = map (goalScore boardMap) goals
+                    score = map (goalScore state boardMap) goals
                     -- calculate how far every goal is from hero's position
                     dist = map (goalDistance boardMap) goals
                     goalStats = zip3 goals score dist

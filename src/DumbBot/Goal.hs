@@ -11,12 +11,20 @@ data Action = Heal | Kill Hero | CaptureMine deriving (Show)
 
 data Goal = Goal Action Pos deriving (Show)
 
-goalScore :: BoardMap -> Goal -> Int
-goalScore boardMap goal =
-    case goal of
-      (Goal CaptureMine pos) -> maxBound
-      (Goal Heal pos) -> minBound
-      (Goal (Kill hero) pos) -> minBound
+canCaptureMine :: Hero -> Int -> Bool
+canCaptureMine ourHero dist = fromIntegral (heroLife ourHero) - dist > 20
+
+goalScore :: State -> BoardMap -> Goal -> Int
+goalScore state boardMap (Goal action pos) =
+    let ourHero = stateHero state
+        actionScore path =
+          case action of
+            CaptureMine -> if canCaptureMine ourHero (distance path)
+                             then maxBound
+                             else minBound
+            Heal -> if heroLife ourHero < 21 then maxBound else minBound
+            (Kill hero) -> minBound
+    in maybe minBound actionScore (boardMap pos)
 
 -- if there is currently no path to desired destination
 -- then return max possible distance otherwise just return
