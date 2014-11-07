@@ -1,7 +1,7 @@
 module DumbBot.Bot (dumbBot) where
 
-import Data.List (sortBy)
-import Control.Monad (msum)
+import Data.List (sortBy, find)
+import Data.Maybe (fromJust)
 
 import DumbBot.Pathfinding
 import DumbBot.Goal
@@ -36,7 +36,9 @@ dumbBot state = let board = gameBoard $ stateGame state
                     -- and well, it might happen that all 3 of these goals
                     -- are unreachable; then we simply Stay in our place
                     -- TODO: maybe consider all goals which are profitable
-                    bestAvailablePath = msum $ map (\(Goal _ pos, _, _) -> boardMap pos) bestGoals
+                    bestAvailablePath = find (\(Goal _ pos, _, _) -> boardMap pos /= Nothing) bestGoals
                 in case bestAvailablePath of
                      Nothing -> Stay
-                     (Just path) -> walk hero path
+                     (Just (Goal _ pos, s, _)) -> if s > 0 -- allow only profitable action
+                                                    then walk hero (fromJust $ boardMap pos)
+                                                    else Stay

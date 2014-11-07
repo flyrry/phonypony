@@ -17,7 +17,7 @@ import qualified Data.PSQueue as PSQ
 import Vindinium.Types
 import Utils
 
-newtype Path  = Path [Pos] deriving Show
+newtype Path  = Path [Pos] deriving (Show, Eq)
 type BoardMap = Pos -> Maybe Path
 
 buildBoardMap :: Board -> Hero -> BoardMap

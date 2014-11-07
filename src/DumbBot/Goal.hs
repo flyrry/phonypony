@@ -14,6 +14,12 @@ data Goal = Goal Action Pos deriving (Show)
 canCaptureMine :: Hero -> Int -> Bool
 canCaptureMine ourHero dist = fromIntegral (heroLife ourHero) - dist > 20
 
+canKill :: Hero -> Hero -> Int -> Bool
+canKill ourHero enemy dist = 
+    let ourHeroLife = fromIntegral $ heroLife ourHero
+        enemyLife = fromIntegral $ heroLife enemy
+    in ourHeroLife - dist > enemyLife + 20
+
 goalScore :: State -> BoardMap -> Goal -> Int
 goalScore state boardMap (Goal action pos) =
     let ourHero = stateHero state
@@ -31,7 +37,9 @@ goalScore state boardMap (Goal action pos) =
                          else if isTavernNearby state && ourHeroHealth < 90 -- we are near the Tavern
                                 then maxBound                               -- so how about we heal to full
                                 else minBound                               -- no need as we are pretty high on health
-               (Kill hero) -> minBound -- TODO: decide when we want to assassinate an enemy
+               (Kill enemy) -> if canKill ourHero enemy dist
+                                 then dist -- TODO: we have to calculate the amount of gold we acquire if we kill enemy
+                                 else minBound -- abandon ship!
     in maybe minBound actionScore (boardMap pos)
 
 -- if there is currently no path to desired destination
