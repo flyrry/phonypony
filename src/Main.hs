@@ -5,6 +5,7 @@ import Options.Applicative
 import Data.String (fromString)
 import Data.Text (pack, unpack)
 import Control.Monad (liftM)
+import Network.Socket (withSocketsDo)
 
 import Bot
 import Vindinium.Types
@@ -48,7 +49,7 @@ runCmd c  = do
     putStrLn $ "Game finished: " ++ unpack (stateViewUrl s)
 
 main :: IO ()
-main =
+main = withSocketsDo $
     execParser opts >>= runCmd
   where
     opts = info (cmd <**> helper) idm
