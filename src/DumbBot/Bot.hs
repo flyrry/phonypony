@@ -7,6 +7,8 @@ import DumbBot.Pathfinding
 import DumbBot.Goal
 import Vindinium.Types
 
+import Debug.Trace
+
 dumbBot :: Bot
 dumbBot state = let hero = stateHero state
                     -- build board map which allows us to get a path to any
@@ -35,9 +37,13 @@ dumbBot state = let hero = stateHero state
                     -- and well, it might happen that all 3 of these goals
                     -- are unreachable; then we simply Stay in our place
                     -- TODO: maybe consider all goals which are profitable
-                    bestAvailablePath = find (\(Goal _ pos, _, _) -> isJust (boardMap pos)) bestGoals
-                in case bestAvailablePath of
-                     Nothing -> Stay
-                     (Just (Goal _ pos, s, _)) -> if s > 0 -- allow only profitable action
-                                                    then walk hero (fromJust $ boardMap pos)
-                                                    else Stay
+                    bestAvailableGoal = find (\(Goal _ pos, _, _) -> isJust (boardMap pos)) bestGoals
+                in trace ("Turn number: " ++ show ((gameTurn . stateGame) state) ++ "\n" ++
+                          "Best goals: " ++ show bestGoals ++ "\n" ++
+                          "Best available goal: " ++ show bestAvailableGoal ++ "\n"
+                         ) $
+                   case bestAvailableGoal of
+                        Nothing -> Stay
+                        (Just (Goal _ pos, s, _)) -> if s > 0 -- allow only profitable action
+                                                       then walk hero (fromJust $ boardMap pos)
+                                                       else Stay
