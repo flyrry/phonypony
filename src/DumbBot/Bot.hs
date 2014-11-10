@@ -39,6 +39,7 @@ dumbBot state = let hero = stateHero state
                     -- TODO: maybe consider all goals which are profitable
                     bestAvailableGoal = find (\(Goal _ pos, _, _) -> isJust (boardMap pos)) bestGoals
                 in trace ("Turn number: " ++ show ((gameTurn . stateGame) state) ++ "\n" ++
+                          "Our hero: health = " ++ show (heroLife hero) ++ "\n" ++
                           "Best goals: " ++ show bestGoals ++ "\n" ++
                           "Best available goal: " ++ show bestAvailableGoal ++ "\n"
                          ) $

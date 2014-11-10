@@ -1,6 +1,7 @@
 module DumbBot.Goal where
 
 import DumbBot.Pathfinding
+import DumbBot.PotentialScore
 import Vindinium.Types
 import Utils
 
@@ -17,27 +18,50 @@ canKill ourHero enemy dist =
         enemyLife = fromIntegral $ heroLife enemy
     in ourHeroLife - dist > enemyLife + 20
 
+needToHeal :: Hero -> Int -> Bool
+needToHeal hero dist = fromIntegral (heroLife hero) <= max (90 - dist * 5) 10
+
+tooMuchHealth :: Hero -> Bool
+tooMuchHealth hero = heroLife hero >= 90
+
+gold :: (RealFrac a, Num a) => a -> Int
+gold = floor . (*10)
+
 goalScore :: State -> BoardMap -> Goal -> Int
 goalScore state boardMap (Goal action pos) =
-    let ourHero = stateHero state
-        ourHeroHealth = heroLife ourHero
-        turn = fromIntegral $ gameTurn $ stateGame state
+    let turn = fromIntegral $ gameTurn $ stateGame state
         maxTurn = fromIntegral $ gameMaxTurns $ stateGame state
-        actionScore path =
-          let dist = distance path -- how many turns we need to reach the goal
-          in case action of
-               CaptureMine -> if canCaptureMine ourHero dist     -- will we have enough life when we reach the mine?
-                                then (maxTurn - turn - dist) * 1 -- 1 gold per turn from the mine after acquiring it
-                                else minBound                    -- no way, let's not suicide
-               Heal -> if ourHeroHealth < 21
-                         then maxBound -- healing is highest priority when our health is low
-                         else if isTavernNearby state && ourHeroHealth < 90 -- we are near the Tavern
-                                then maxBound                               -- so how about we heal to full
-                                else minBound                               -- no need as we are pretty high on health
-               (Kill enemy) -> if dist < 7 && canKill ourHero enemy dist
-                                 then (maxTurn - turn - dist) * numberOfHeroMines (gameBoard $ stateGame state) enemy
-                                 else minBound -- abandon ship!
-    in maybe minBound actionScore (boardMap pos)
+        calculateScore path =
+          let dist = distance path
+              potentialGoalScore = scoreAction state dist action
+          in potentialScore potentialGoalScore turn (min 200 (maxTurn - turn))
+    in maybe (-9999) calculateScore (boardMap pos)
+
+scoreAction :: State -> Int -> Action -> PotentialScore Int
+scoreAction state dist CaptureMine =
+    let ourHero = stateHero state
+        turn = fromIntegral $ gameTurn $ stateGame state
+    in if canCaptureMine ourHero dist
+         then timespan (gold (0.1::Double)) (turn + dist) (constant (gold (1::Double)))
+         else loseEverything ourHero
+
+scoreAction state dist Heal =
+    let ourHero = stateHero state
+    in case () of
+         _
+          | needToHeal ourHero dist -> negative (loseEverything ourHero)
+          | tooMuchHealth ourHero -> loseEverything ourHero
+          | dist > 1 -> constant (gold (0.1::Double))
+          | otherwise -> value (gold (-2::Double))
+
+scoreAction state dist (Kill enemy) =
+    let ourHero = stateHero state
+    in if dist < 7 && canKill ourHero enemy dist
+         then negative (loseEverything enemy)
+         else loseEverything ourHero
+
+loseEverything :: Hero -> PotentialScore Int
+loseEverything hero = constant (negate (gold (fromIntegral $ heroMineCount hero :: Double)))
 
 -- if there is currently no path to desired destination
 -- then return max possible distance otherwise just return
@@ -45,7 +69,7 @@ goalScore state boardMap (Goal action pos) =
 goalDistance :: BoardMap -> Goal -> Int
 goalDistance boardMap (Goal _ pos) =
     let path = boardMap pos
-    in maybe maxBound distance path
+    in maybe 9999 distance path
 
 -- collect all possible goals from the board that we might be interested in pursuing
 getGoals :: State -> [Goal]
