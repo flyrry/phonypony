@@ -5,7 +5,6 @@ import Utils
 import StupidBot.Goal
 
 import qualified Data.Graph.AStar as AS
-import qualified Data.Set as S
 import Data.Maybe (fromMaybe, fromJust)
 import Data.List (find)
 
@@ -44,6 +43,7 @@ distanceEstimateTo (Kill hid) s pos =
   let heroes = gameHeroes $ stateGame s
       Just h = find (\e -> heroId e == hid) heroes
   in manhattan pos $ heroPos h
+distanceEstimateTo Survive _ _ = 1
 distanceEstimateTo _ _ _ = error "not implemented!"
 
 stepCost :: State -> Goal -> Distance
@@ -53,19 +53,3 @@ stepCost s goal from to =
      FreeTile -> dangerLevelWithin 3 s from to
      _ -> if isGoal goal s to then 1 else 999
 
-dangerLevelWithin :: Int -> State -> Pos -> Pos -> Int
-dangerLevelWithin 0 _ _ _ = 0
-dangerLevelWithin steps s from pos =
-  let next = S.delete from $ adjacentTiles (gameBoard $ stateGame s) pos
-      heroes = heroesNearby s pos
-  in if null heroes then sum $ map (dangerLevelWithin (steps-1) s pos) (S.toList next)
-     else sum $ map (\_ -> calcCost steps) heroes
-
-calcCost :: Int -> Int
-calcCost steps = round $ (1 / (toRational steps)) * 8
-
-heroesNearby :: State -> Pos -> [Hero]
-heroesNearby s pos =
-  foldl (\es e ->
-      if pos `S.member` (adjacentTiles (gameBoard $ stateGame s) (heroPos e))
-      then e:es else es) [] (getEnemies s)
