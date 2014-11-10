@@ -5,7 +5,7 @@ import Utils
 import StupidBot.Goal
 
 import qualified Data.Graph.AStar as AS
-import qualified Data.Map as M
+import qualified Data.Set as S
 import Data.Maybe (fromMaybe, fromJust)
 import Data.List (find)
 
@@ -47,34 +47,25 @@ distanceEstimateTo (Kill hid) s pos =
 distanceEstimateTo _ _ _ = error "not implemented!"
 
 stepCost :: State -> Goal -> Distance
-stepCost s goal _ to =
+stepCost s goal from to =
   let board = gameBoard $ stateGame s
   in case fromJust $ tileAt board to of
-     FreeTile -> case M.lookup to (enemyInfluence s) of
-                  Nothing -> 1
-                  Just x  -> x
+     FreeTile -> dangerLevelWithin 3 s from to
      _ -> if isGoal goal s to then 1 else 999
 
-enemyInfluence :: State -> M.Map Pos Int
-enemyInfluence s =
-  let enemies = gameHeroes $ stateGame s
-      board   = gameBoard $ stateGame s
-  in foldl (\m e -> heroInfluence m board e) M.empty enemies
+dangerLevelWithin :: Int -> State -> Pos -> Pos -> Int
+dangerLevelWithin 0 _ _ _ = 0
+dangerLevelWithin steps s from pos =
+  let next = S.delete from $ adjacentTiles (gameBoard $ stateGame s) pos
+      heroes = heroesNearby s pos
+  in if null heroes then sum $ map (dangerLevelWithin (steps-1) s pos) (S.toList next)
+     else sum $ map (\_ -> calcCost steps) heroes
 
-heroInfluence :: M.Map Pos Int -> Board -> Hero -> M.Map Pos Int
-heroInfluence mm board hero =
-  foldl (\mo (dl, ps) -> foldl (\mi p ->
-                          if inBoard board p then M.insert p dl mi
-                          else mi) mo ps
-        ) mm (influenceZone $ heroPos hero)
+calcCost :: Int -> Int
+calcCost steps = round $ (1 / (toRational steps)) * 8
 
-influenceZone :: Pos -> [(Int,[Pos])]
-influenceZone (Pos x y) = [
-  (8, [Pos (x-1) y, Pos (x+1) y, Pos x (y-1), Pos x (y+1)]),
-  (7, [Pos (x+1) (y+1), Pos (x+1) (y-1), Pos (x-1) (y-1), Pos (x-1) (y+1)]),
-  (3, [Pos (x+2) y, Pos (x-2) y, Pos x (y+2), Pos x (y-2)]),
-  (2, [Pos (x+2) (y+1), Pos (x+2) (y-1), Pos (x+2) (y-2), Pos (x+2) (y+2),
-       Pos (x+1) (y+2), Pos (x+1) (y-2), Pos (x-2) (y+1), Pos (x-2) (y-1),
-       Pos (x-2) (y-2), Pos (x-2) (y+2), Pos (x-1) (y+2), Pos (x-1) (y-2)])
-  ]
-
+heroesNearby :: State -> Pos -> [Hero]
+heroesNearby s pos =
+  foldl (\es e ->
+      if pos `S.member` (adjacentTiles (gameBoard $ stateGame s) (heroPos e))
+      then e:es else es) [] (getEnemies s)
